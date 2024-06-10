@@ -1,0 +1,97 @@
+variables:
+  - name: CLUSTER_NAME
+  - name: KUBECONFIG
+  - name: REGION
+  - name: PERMISSIONS_BOUNDARY_NAME
+  - name: PERMISSIONS_BOUNDARY_ARN
+  - name: AWS_GITHUB_ACTIONS_ROLE_ARN
+
+tasks:
+  - name: create-cluster-config
+    description: Create the EKS cluster-config.yaml
+    actions:
+      - cmd: |
+          cat <<EOF > cluster-config.yaml
+          apiVersion: eksctl.io/v1alpha5
+          kind: ClusterConfig
+
+          metadata:
+            name: ${CLUSTER_NAME}
+            region: ${REGION}
+            version: "1.27"
+            tags:
+              PermissionsBoundary: ${PERMISSIONS_BOUNDARY_NAME}
+
+          iamIdentityMappings:
+            - arn: ${AWS_GITHUB_ACTIONS_ROLE_ARN}
+              groups:
+                - system:masters
+              username: admin
+              noDuplicateARNs: true
+
+          iam:
+            withOIDC: true
+            serviceRolePermissionsBoundary: ${PERMISSIONS_BOUNDARY_ARN}
+
+          addons:
+            - name: aws-ebs-csi-driver
+              version: v1.25.0-eksbuild.1
+
+              attachPolicyARNs:
+                - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+              permissionsBoundary: ${PERMISSIONS_BOUNDARY_ARN}
+              tags:
+                PermissionsBoundary: ${PERMISSIONS_BOUNDARY_NAME}
+
+            - name: vpc-cni
+              permissionsBoundary: ${PERMISSIONS_BOUNDARY_ARN}
+              tags:
+                PermissionsBoundary: ${PERMISSIONS_BOUNDARY_NAME}
+
+          managedNodeGroups:
+            - name: ng-1
+              instanceType: m5.2xlarge
+              desiredCapacity: 3
+              volumeSize: 150
+              tags:
+                PermissionsBoundary: ${PERMISSIONS_BOUNDARY_NAME}
+              iam:
+                instanceRolePermissionsBoundary: ${PERMISSIONS_BOUNDARY_ARN}
+              ami: ami-068ab6ac1cec494e0
+              amiFamily: AmazonLinux2
+              overrideBootstrapCommand: |
+                #!/bin/bash
+                /etc/eks/bootstrap.sh ${CLUSTER_NAME} --container-runtime containerd
+          EOF
+
+  - name: create-cluster
+    description: Deploy eks cluster with eksctl and cluster-config.yaml
+    actions:
+      - task: create-cluster-config
+      - cmd: eksctl create cluster -f cluster-config.yaml
+      - cmd: eksctl utils write-kubeconfig -c ${CLUSTER_NAME} --kubeconfig ${KUBECONFIG}
+
+  - name: update-kubeconfig
+    description: Get current kubeconfig for the cluster
+    actions:
+      - cmd: aws --region ${REGION} eks update-kubeconfig --name ${CLUSTER_NAME} --kubeconfig ${KUBECONFIG}
+
+  - name: destroy
+    description: Destroy eks cluster with eksctl and cluster-config.yaml
+    actions:
+      - cmd: eksctl delete cluster -f cluster-config.yaml --disable-nodegroup-eviction --wait
+
+  - name: create-bundle
+    description: Create a UDS bundle
+    actions:
+      - cmd: uds create --architecture=amd64 --confirm --no-progress
+
+  - name: clean
+    description: clean up repository
+    actions:
+      - cmd: rm -f cluster-config.yaml uds-bundle-core-amd64-0.0.1.tar.zst ${KUBECONFIG}
+
+  - name: deploy
+    description: Deploy UDS bundle to the cluster. requires environment variables for Certificates and keys.
+    actions:
+      - cmd: uds deploy uds-core-demo-amd64-0.0.1.tar.zst --confirm --no-progress

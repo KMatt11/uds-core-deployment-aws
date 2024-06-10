@@ -1,0 +1,5 @@
+.env
+cluster-config.yaml
+uds-bundle-core-*.tar.zst
+zarf-sbom
+kubeconfig-*
