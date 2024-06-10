@@ -94,4 +94,4 @@ tasks:
   - name: deploy
     description: Deploy UDS bundle to the cluster. requires environment variables for Certificates and keys.
     actions:
-      - cmd: uds deploy --confirm --no-progress
+      - cmd: uds deploy uds-bundle-uds-core-demo-amd64-0.0.1.tar.zst --confirm --no-progress
