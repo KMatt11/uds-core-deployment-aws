@@ -94,4 +94,4 @@ tasks:
   - name: deploy
     description: Deploy UDS bundle to the cluster. requires environment variables for Certificates and keys.
     actions:
-      - cmd: uds deploy uds-core-demo-amd64-0.0.1.tar.zst --confirm --no-progress
+      - cmd: uds deploy oci://ghcr.io/kinzp/uds-core-demo:0.0.1 --confirm --no-progress
