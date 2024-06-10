@@ -3,6 +3,8 @@ metadata:
   name: podinfo
   description: Example showcasing multiple ways to deploy helm charts
   version: 0.0.1
+  architecture: amd64
+
 
 components:
   - name: podinfo
