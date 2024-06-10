@@ -89,9 +89,9 @@ tasks:
   - name: clean
     description: clean up repository
     actions:
-      - cmd: rm -f cluster-config.yaml uds-core-demo-*.tar.zst ${KUBECONFIG}
+      - cmd: rm -f cluster-config.yaml uds-bundle-uds-core-demo-amd64-0.0.1.tar.zst ${KUBECONFIG}
 
   - name: deploy
     description: Deploy UDS bundle to the cluster. requires environment variables for Certificates and keys.
     actions:
-      - cmd: uds deploy uds-core-demo-*.tar.zst --confirm --no-progress
+      - cmd: uds deploy uds-bundle-uds-core-demo-amd64-0.0.1.tar.zst --confirm --no-progress
